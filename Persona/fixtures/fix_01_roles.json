@@ -1,0 +1,16 @@
+[
+    {
+        "model": "Usuario.roles",
+        "pk": 1,
+        "fields": {
+            "nombre": "Cuidador"
+        }
+    },
+    {
+        "model": "Usuario.roles",
+        "pk": 2,
+        "fields": {
+            "nombre": "Custodiado"
+        }
+    }
+]

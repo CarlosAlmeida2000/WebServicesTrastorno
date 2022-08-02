@@ -1,13 +1,13 @@
 [
     {
-        "model": "Usuario.roles",
+        "model": "Persona.roles",
         "pk": 1,
         "fields": {
             "nombre": "Cuidador"
         }
     },
     {
-        "model": "Usuario.roles",
+        "model": "Persona.roles",
         "pk": 2,
         "fields": {
             "nombre": "Custodiado"

@@ -8,27 +8,27 @@ class Cuidador(APIView):
     def get(self, request, format = None):
         if request.method == 'GET':
             try:
-                return Response({'usuario': Usuarios.obtener_datos(request)})
+                return Response({'cuidadores': Usuarios.obtener_datos(request)})
             except Exception as e:
-                return Response({'usuario': 'error'})
+                return Response({'cuidadores': 'error'})
         
     def post(self, request, format = None):
         if request.method == 'POST':
             try:
                 json_data = json.loads(request.body.decode('utf-8'))
                 usuario = Usuarios()
-                return Response({'usuario': usuario.guardar(json_data)})
+                return Response({'cuidador': usuario.guardar(json_data)})
             except Exception as e: 
-                return Response({'usuario': 'error'})
+                return Response({'cuidador': 'error'})
     
     def put(self, request, format = None):
         if request.method == 'PUT':
             try:
                 json_data = json.loads(request.body.decode('utf-8'))
                 usuario = Usuarios.objects.get(id = json_data['id'])
-                return Response({'usuario': usuario.guardar(json_data)})
+                return Response({'cuidador': usuario.guardar(json_data)})
             except Exception as e: 
-                return Response({'usuario': 'error'})
+                return Response({'cuidador': 'error'})
 
 class Autenticacion(APIView):
     def post(self, request, format = None):
@@ -43,9 +43,9 @@ class Custodiado(APIView):
     def get(self, request, format = None):
         if request.method == 'GET':
             try:
-                return Response({'custodiado': Custodiados.obtener_datos(request)})
+                return Response({'custodiados': Custodiados.obtener_datos(request)})
             except Exception as e:
-                return Response({'custodiado': 'error'})
+                return Response({'custodiados': 'error'})
 
     def post(self, request, format = None):
         if request.method == 'POST':

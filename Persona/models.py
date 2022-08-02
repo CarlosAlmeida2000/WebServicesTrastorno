@@ -4,7 +4,7 @@ from django.db.models.functions import Concat
 from django.db import transaction
 from fernet_fields import EncryptedTextField
 from django.db import IntegrityError
-from file import File
+from Persona.file import File
 import os
 
 # Create your models here.
@@ -26,7 +26,7 @@ class Personas(models.Model):
             if 'persona__apellidos' in json_data:
                 self.apellidos = json_data['persona__apellidos']
             if 'persona__cedula' in json_data:
-                self.cedula_ruc = json_data['persona__cedula']
+                self.cedula = json_data['persona__cedula']
             if 'persona__fecha_nacimiento' in json_data:
                 self.fecha_nacimiento = json_data['persona__fecha_nacimiento']
             self.save()
@@ -70,10 +70,10 @@ class Usuarios(models.Model):
             if 'id' in request.GET:
                 usuarios = Usuarios.objects.filter(pk = request.GET['id'])   
             elif 'persona__cedula' in request.GET:
-                usuarios = Usuarios.objects.filter(persona__cedula__contains = request.GET['persona__cedula'])   
+                usuarios = Usuarios.objects.filter(persona__cedula__icontains = request.GET['persona__cedula'])   
             elif 'nombres_apellidos' in request.GET:
                 usuarios = (Usuarios.objects.all().select_related('persona')).annotate(nombres_completos = Concat('persona__nombres', Value(' '), 'persona__apellidos'))
-                usuarios = usuarios.filter(nombres_completos__contains = request.GET['nombres_apellidos'])
+                usuarios = usuarios.filter(nombres_completos__icontains = request.GET['nombres_apellidos'])
             else:
                 usuarios = Usuarios.objects.all()
             usuarios = usuarios.order_by('nom_usuario').select_related('persona').values('id', 'nom_usuario', 
@@ -90,8 +90,14 @@ class Usuarios(models.Model):
     def guardar(self, json_data):
         punto_guardado = transaction.savepoint()
         try:
-            persona_editar = Personas.objects.get(cedula_ruc = json_data['persona__cedula'])
-            persona_guardada, self.persona = persona_editar.guardar(json_data, 'Cuidador')
+            existe_persona = Personas.objects.filter(cedula = json_data['persona__cedula'])
+            if(len(existe_persona) > 0):
+                # Ya existe la persona
+                self.persona = existe_persona[0]
+            else:
+                # Es una nueva persona
+                self.persona = Personas()
+            persona_guardada, self.persona = self.persona.guardar(json_data, 'Cuidador')
             if(persona_guardada == 'si'):
                 if 'nom_usuario' in json_data:
                     self.nom_usuario = json_data['nom_usuario']
@@ -139,28 +145,30 @@ class Usuarios(models.Model):
             return 'error'
 
 class Custodiados(models.Model):
-    cuidador = models.ForeignKey('Persona.Usuario', on_delete = models.PROTECT)
-    custodiado = models.ForeignKey('Persona.Personas', on_delete = models.PROTECT)
+    cuidador = models.ForeignKey('Persona.Usuarios', on_delete = models.PROTECT)
+    persona = models.ForeignKey('Persona.Personas', on_delete = models.PROTECT)
 
     @staticmethod
     def obtener_datos(request):
         try:
-            if 'id' in request.GET:
-                custodiados = Custodiados.objects.filter(Q(pk = request.GET['id']) & Q(cuidador__pk = request.GET['usuario_id']))   
-            elif 'persona__cedula' in request.GET:
-                custodiados = Custodiados.objects.filter(Q(custodiado__cedula__contains = request.GET['persona__cedula']) & Q(cuidador__pk = request.GET['usuario_id']))   
-            elif 'nombres_apellidos' in request.GET:
-                custodiados = (Custodiados.objects.filter(cuidador__pk = request.GET['usuario_id']).select_related('custodiado')).annotate(nombres_completos = Concat('custodiado__nombres', Value(' '), 'custodiado__apellidos'))
-                custodiados = custodiados.filter(nombres_completos__contains = request.GET['nombres_apellidos'])
+            if 'id' in request.GET and 'cuidador_id' in request.GET:
+                custodiados = Custodiados.objects.filter(Q(pk = request.GET['id']) & Q(cuidador__pk = request.GET['cuidador_id']))   
+            elif 'persona__cedula' in request.GET and 'cuidador_id' in request.GET:
+                custodiados = Custodiados.objects.filter(Q(custodiado__cedula__icontains = request.GET['persona__cedula']) & Q(cuidador__pk = request.GET['cuidador_id']))   
+            elif 'nombres_apellidos' in request.GET and 'cuidador_id' in request.GET:
+                custodiados = (Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id']).select_related('custodiado')).annotate(nombres_completos = Concat('persona__nombres', Value(' '), 'persona__apellidos'))
+                custodiados = custodiados.filter(nombres_completos__icontains = request.GET['nombres_apellidos'])
+            elif 'cuidador_id' in request.GET:
+                custodiados = Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id'])
             else:
-                custodiados = Custodiados.objects.filter(cuidador__pk = request.GET['usuario_id'])
-            custodiados = custodiados.select_related('custodiado').values('id', 
-                'custodiado_id','custodiado__nombres', 'custodiado__apellidos', 'custodiado__cedula', 'custodiado__fecha_nacimiento', 'custodiado__foto_perfil')
+                custodiados = Custodiados.objects.all()
+            custodiados = custodiados.select_related('persona').values('id', 'cuidador_id',
+                'persona_id','persona__nombres', 'persona__apellidos', 'persona__cedula', 'persona__fecha_nacimiento', 'persona__foto_perfil')
             file = File()
             for u in range(len(custodiados)):
-                if(custodiados[u]['custodiado__foto_perfil'] != ''):
-                    file.ruta = custodiados[u]['custodiado__foto_perfil']
-                    custodiados[u]['custodiado__foto_perfil'] = file.get_base64()
+                if(custodiados[u]['persona__foto_perfil'] != ''):
+                    file.ruta = custodiados[u]['persona__foto_perfil']
+                    custodiados[u]['persona__foto_perfil'] = file.get_base64()
             return list(custodiados)
         except Exception as e: 
             return 'error'
@@ -168,10 +176,16 @@ class Custodiados(models.Model):
     def guardar(self, json_data):
         punto_guardado = transaction.savepoint()
         try:
-            persona_editar = Personas.objects.get(cedula_ruc = json_data['persona__cedula'])
-            persona_guardada, self.persona_custodiada = persona_editar.guardar(json_data, 'Custodiado')
+            existe_persona = Personas.objects.filter(cedula = json_data['persona__cedula'])
+            if(len(existe_persona) > 0):
+                # Ya existe la persona
+                self.persona = existe_persona[0]
+            else:
+                # Es una nueva persona
+                self.persona = Personas()
+            persona_guardada, self.custodiado = self.persona.guardar(json_data, 'Custodiado')
             if(persona_guardada == 'si'):
-                self.cuidador = Usuarios.objects.get(pk = json_data['usuario_id'])    
+                self.cuidador = Usuarios.objects.get(pk = json_data['cuidador_id'])    
                 self.save()
                 return 'guardado'
             else:

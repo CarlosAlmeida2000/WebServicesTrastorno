@@ -16,7 +16,7 @@ class Historial(models.Model):
     def obtener_historial(request):
         try:
             if 'persona__cedula' in request.GET and 'cuidador_id' in request.GET:
-                custodiados = Custodiados.objects.filter(Q(custodiado__cedula__icontains = request.GET['persona__cedula']) & Q(cuidador__pk = request.GET['cuidador_id']))   
+                custodiados = Custodiados.objects.filter(Q(persona__cedula__icontains = request.GET['persona__cedula']) & Q(cuidador__pk = request.GET['cuidador_id']))   
                 historial = Historial.objects.all().exclude(~Q(custodiado_id__in = custodiados.values('id')))
             elif 'nombres_apellidos' in request.GET and 'cuidador_id' in request.GET:
                 custodiados = (Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id']).select_related('persona')).annotate(nombres_completos = Concat('persona__nombres', Value(' '), 'persona__apellidos'))
@@ -47,19 +47,19 @@ class Historial(models.Model):
                 custodiado = (Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id']).select_related('persona')).annotate(nombres_completos = Concat('persona__nombres', Value(' '), 'persona__apellidos'))
                 custodiado = custodiado.get(nombres_completos__icontains = request.GET['nombres_apellidos'])
             if custodiado:
-                tabular_Datos = custodiado.historial_custodiado.all().values()
-                fecha_minima = (tabular_Datos.order_by('fecha_hora'))[0]['fecha_hora']
-                fecha_maxima = (tabular_Datos.order_by('-fecha_hora'))[0]['fecha_hora']
+                historial = custodiado.historial_custodiado.all().values()
+                fecha_minima = (historial.order_by('fecha_hora'))[0]['fecha_hora']
+                fecha_maxima = (historial.order_by('-fecha_hora'))[0]['fecha_hora']
                 historial_grafico =  [{
                     "custodiado__persona__nombres": custodiado.persona.nombres,
                     "fecha_inicio_fin": "Desde "+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + " hasta " + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
-                    "enfadado": (tabular_Datos.filter(expresion_facial = 'Enfadado').count()),
-                    "asqueado": (tabular_Datos.filter(expresion_facial = 'Asqueado').count()),
-                    "temeroso": (tabular_Datos.filter(expresion_facial = 'Temeroso').count()),
-                    "feliz": (tabular_Datos.filter(expresion_facial = 'Feliz').count()),
-                    "neutral": (tabular_Datos.filter(expresion_facial = 'Neutral').count()),
-                    "triste": (tabular_Datos.filter(expresion_facial = 'Triste').count()),
-                    "sorprendido": (tabular_Datos.filter(expresion_facial = 'Sorprendido').count()),
+                    "enfadado": (historial.filter(expresion_facial = 'Enfadado').count()),
+                    "asqueado": (historial.filter(expresion_facial = 'Asqueado').count()),
+                    "temeroso": (historial.filter(expresion_facial = 'Temeroso').count()),
+                    "feliz": (historial.filter(expresion_facial = 'Feliz').count()),
+                    "neutral": (historial.filter(expresion_facial = 'Neutral').count()),
+                    "triste": (historial.filter(expresion_facial = 'Triste').count()),
+                    "sorprendido": (historial.filter(expresion_facial = 'Sorprendido').count()),
                     # AQUI EJECUTAR EL ALGORITMO DE PREDICCIÓN
                     "prediccion_trastorno": 0.0
                 }]

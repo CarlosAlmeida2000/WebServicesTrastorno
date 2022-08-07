@@ -1,0 +1,72 @@
+[
+    {
+        "model": "Monitoreo.historial",
+        "pk": 1,
+        "fields": {
+            "fecha_hora": "2022-08-03 15:35",
+            "imagen_expresion": " ",
+            "expresion_facial": "Triste",
+            "custodiado_id": 1
+        }
+    },
+    {
+        "model": "Monitoreo.historial",
+        "pk": 2,
+        "fields": {
+            "fecha_hora": "2022-08-25 15:35",
+            "imagen_expresion": " ",
+            "expresion_facial": "Feliz",
+            "custodiado_id": 1
+        }
+    },
+    {
+        "model": "Monitoreo.historial",
+        "pk": 3,
+        "fields": {
+            "fecha_hora": "2022-08-03 8:25",
+            "imagen_expresion": " ",
+            "expresion_facial": "Triste",
+            "custodiado_id": 2
+        }
+    },
+    {
+        "model": "Monitoreo.historial",
+        "pk": 4,
+        "fields": {
+            "fecha_hora": "2022-08-03 9:02",
+            "imagen_expresion": " ",
+            "expresion_facial": "Neutro",
+            "custodiado_id": 3
+        }
+    },
+    {
+        "model": "Monitoreo.historial",
+        "pk": 5,
+        "fields": {
+            "fecha_hora": "2022-09-03 15:35",
+            "imagen_expresion": " ",
+            "expresion_facial": "Enfadado",
+            "custodiado_id": 1
+        }
+    },
+    {
+        "model": "Monitoreo.historial",
+        "pk": 6,
+        "fields": {
+            "fecha_hora": "2022-09-03 15:35",
+            "imagen_expresion": " ",
+            "expresion_facial": "Sorprendido",
+            "custodiado_id": 1
+        }
+    },
+    {
+        "model": "Monitoreo.historial",
+        "pk": 7,
+        "fields": {
+            "fecha_hora": "2022-10-03 16:40",
+            "imagen_expresion": " ",
+            "expresion_facial": "Sorprendido",
+            "custodiado_id": 1
+        }
+    }
+]

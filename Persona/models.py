@@ -5,6 +5,7 @@ from django.db import transaction
 from fernet_fields import EncryptedTextField
 from django.db import IntegrityError
 from Persona.file import File
+from Monitoreo.entrenamiento import Entrenamiento
 import os
 
 # Create your models here.
@@ -41,11 +42,13 @@ class Personas(models.Model):
                     ruta_img_borrar = self.foto_perfil.url[1:]
                 file = File()
                 file.base64 = json_data['persona__foto_perfil']
-                file.nombre_file = 'persona_' + str(self.id)
+                file.nombre_file = '\\'+str(self.id)+'\\'+str(self.id) + '_'
                 self.foto_perfil = file.get_file()
                 self.save()
                 if(ruta_img_borrar != ''):
                     os.remove(ruta_img_borrar)
+                entrenar_rostros = Entrenamiento()
+                entrenar_rostros.entrenar()
             return 'si', self
         except IntegrityError:
             transaction.savepoint_rollback(punto_guardado)

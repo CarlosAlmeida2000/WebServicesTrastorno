@@ -1,5 +1,7 @@
+from math import fabs
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from Monitoreo.reconocimiento import Expresion
 from .models import *
 import json
 
@@ -20,8 +22,17 @@ class GraficoCustodiado(APIView):
             except Exception as e:
                 return Response({'grafico': 'error'})
 
-class Monitoreo(APIView):
-    def get(self, request, format = None):
-        pass
-    def post(self, request, format = None):
-        pass
+class Capturando(APIView):
+   
+    def put(self, request, format = None):
+        if request.method == 'PUT':
+            try:
+                expresion = Expresion()
+                json_data = json.loads(request.body.decode('utf-8'))
+                if json_data['monitoreando']:
+                    expresion.reconocer()
+                else:
+                    expresion = None
+                return Response({'capturando': json_data['monitoreando']})
+            except Exception as e: 
+                return Response({'capturando': 'error'+str(e)})

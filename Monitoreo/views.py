@@ -1,4 +1,3 @@
-from math import fabs
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from Monitoreo.reconocimiento import Expresion
@@ -32,7 +31,7 @@ class Capturando(APIView):
                 if json_data['monitoreando']:
                     expresion.reconocer()
                 else:
-                    expresion = None
+                    expresion.__del__
                 return Response({'capturando': json_data['monitoreando']})
             except Exception as e: 
                 return Response({'capturando': 'error'+str(e)})

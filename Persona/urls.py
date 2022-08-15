@@ -2,7 +2,7 @@ from django.urls import path
 from Persona import views
 
 urlpatterns = [
-    path('cuidador/', views.Cuidador.as_view()),
-    path('autenticacion/', views.Autenticacion.as_view()),
-    path('custodiado/', views.Custodiado.as_view())
+    path('cuidador/', views.vwCuidador.as_view()),
+    path('autenticacion/', views.vwAutenticacion.as_view()),
+    path('custodiado/', views.vwCustodiado.as_view())
 ]

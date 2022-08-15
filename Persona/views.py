@@ -4,7 +4,7 @@ from .models import *
 import json
 
 # Create your views here.
-class Cuidador(APIView):
+class vwCuidador(APIView):
     def get(self, request, format = None):
         if request.method == 'GET':
             try:
@@ -30,7 +30,7 @@ class Cuidador(APIView):
             except Exception as e: 
                 return Response({'cuidador': 'error'})
 
-class Autenticacion(APIView):
+class vwAutenticacion(APIView):
     def post(self, request, format = None):
         if request.method == 'POST':
             try:
@@ -39,7 +39,7 @@ class Autenticacion(APIView):
             except Exception as e: 
                 return Response({'usuario': 'error'})
 
-class Custodiado(APIView):
+class vwCustodiado(APIView):
     def get(self, request, format = None):
         if request.method == 'GET':
             try:

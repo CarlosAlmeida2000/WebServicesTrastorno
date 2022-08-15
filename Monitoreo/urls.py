@@ -2,7 +2,7 @@ from django.urls import path
 from Monitoreo import views
 
 urlpatterns = [
-    path('historial/', views.HistorialCustodiado.as_view()),
-    path('grafico/', views.GraficoCustodiado.as_view()),
-    path('capturando/', views.Capturando.as_view())
+    path('historial/', views.vwHistorial.as_view()),
+    path('grafico/', views.vwGrafico.as_view()),
+    path('vigilancia/', views.vwVigilancia.as_view())
 ]

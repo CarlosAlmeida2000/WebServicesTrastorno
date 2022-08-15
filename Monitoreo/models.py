@@ -2,10 +2,14 @@ from django.db import models
 from django.db.models import Q, Value
 from django.db.models.functions import Concat
 from Persona.models import Custodiados
-from Persona.file import File
+from Persona.image import Image
 from datetime import datetime
 
 # Create your models here.
+
+class Vigilancia(models.Model):
+    estado = models.BooleanField()
+
 class Historial(models.Model):
     fecha_hora = models.DateTimeField()
     imagen_expresion = models.ImageField(upload_to = 'Expresiones_detectadas', null = True, blank = True)
@@ -29,7 +33,7 @@ class Historial(models.Model):
                 custodiados = Custodiados.objects.all()
                 historial = Historial.objects.all().exclude(~Q(custodiado_id__in = custodiados.values('id')))
             historial = historial.values('id', 'fecha_hora', 'expresion_facial', 'custodiado_id', 'custodiado__persona__nombres', 'imagen_expresion')
-            file = File()
+            file = Image()
             for u in range(len(historial)):
                 if(historial[u]['imagen_expresion'] != ''):
                     file.ruta = historial[u]['imagen_expresion']
@@ -51,17 +55,17 @@ class Historial(models.Model):
                 fecha_minima = (historial.order_by('fecha_hora'))[0]['fecha_hora']
                 fecha_maxima = (historial.order_by('-fecha_hora'))[0]['fecha_hora']
                 historial_grafico =  [{
-                    "custodiado__persona__nombres": custodiado.persona.nombres,
-                    "fecha_inicio_fin": "Desde "+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + " hasta " + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
-                    "enfadado": (historial.filter(expresion_facial = 'Enfadado').count()),
-                    "asqueado": (historial.filter(expresion_facial = 'Asqueado').count()),
-                    "temeroso": (historial.filter(expresion_facial = 'Temeroso').count()),
-                    "feliz": (historial.filter(expresion_facial = 'Feliz').count()),
-                    "neutral": (historial.filter(expresion_facial = 'Neutral').count()),
-                    "triste": (historial.filter(expresion_facial = 'Triste').count()),
-                    "sorprendido": (historial.filter(expresion_facial = 'Sorprendido').count()),
+                    'custodiado__persona__nombres': custodiado.persona.nombres,
+                    'fecha_inicio_fin': 'Desde '+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + ' hasta ' + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
+                    'enfadado': (historial.filter(expresion_facial = 'Enfadado').count()),
+                    'asqueado': (historial.filter(expresion_facial = 'Asqueado').count()),
+                    'temeroso': (historial.filter(expresion_facial = 'Temeroso').count()),
+                    'feliz': (historial.filter(expresion_facial = 'Feliz').count()),
+                    'neutral': (historial.filter(expresion_facial = 'Neutral').count()),
+                    'triste': (historial.filter(expresion_facial = 'Triste').count()),
+                    'sorprendido': (historial.filter(expresion_facial = 'Sorprendido').count()),
                     # AQUI EJECUTAR EL ALGORITMO DE PREDICCIÓN
-                    "prediccion_trastorno": 0.0
+                    'prediccion_trastorno': 0.0
                 }]
                 return historial_grafico
             else:

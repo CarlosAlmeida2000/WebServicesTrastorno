@@ -4,9 +4,10 @@ from django.db.models.functions import Concat
 from django.db import transaction
 from fernet_fields import EncryptedTextField
 from django.db import IntegrityError
-from Persona.file import File
-from Monitoreo.entrenamiento import Entrenamiento
+from Persona.image import Image
+from Monitoreo.entrenamiento_facial import EntrenamientoFacial
 import os
+import threading
 
 # Create your models here.
 class Roles(models.Model):
@@ -40,15 +41,16 @@ class Personas(models.Model):
                 ruta_img_borrar = ''
                 if(str(self.foto_perfil) != ''):
                     ruta_img_borrar = self.foto_perfil.url[1:]
-                file = File()
+                file = Image()
                 file.base64 = json_data['persona__foto_perfil']
                 file.nombre_file = '\\'+str(self.id)+'\\'+str(self.id) + '_'
                 self.foto_perfil = file.get_file()
                 self.save()
                 if(ruta_img_borrar != ''):
                     os.remove(ruta_img_borrar)
-                entrenar_rostros = Entrenamiento()
-                entrenar_rostros.entrenar()
+                # Implementación de un hilo para realizar el entrenamiento del modelo de reconocimiento facial
+                hiloEntrenar = threading.Thread(target = self.entrenar_rostros)
+                hiloEntrenar.start()
             return 'si', self
         except IntegrityError:
             transaction.savepoint_rollback(punto_guardado)
@@ -56,6 +58,10 @@ class Personas(models.Model):
         except Exception as e: 
             transaction.savepoint_rollback(punto_guardado)
             return 'error', None
+    
+    def entrenar_rostros(self):
+        entrenar_rostros = EntrenamientoFacial()
+        entrenar_rostros.entrenar()
     
 class RolesPersonas(models.Model):
     persona = models.ForeignKey('Persona.Personas', on_delete = models.PROTECT, related_name = 'roles_persona')
@@ -81,7 +87,7 @@ class Usuarios(models.Model):
                 usuarios = Usuarios.objects.all()
             usuarios = usuarios.order_by('nom_usuario').select_related('persona').values('id', 'nom_usuario', 
                 'persona_id','persona__nombres', 'persona__apellidos', 'persona__cedula', 'persona__fecha_nacimiento', 'persona__foto_perfil')
-            file = File()
+            file = Image()
             for u in range(len(usuarios)):
                 if(usuarios[u]['persona__foto_perfil'] != ''):
                     file.ruta = usuarios[u]['persona__foto_perfil']
@@ -122,7 +128,7 @@ class Usuarios(models.Model):
         try:
             usuario = Usuarios.objects.get(nom_usuario = json_data['usuario'])
             if(usuario.clave == json_data['clave']):
-                file = File()
+                file = Image()
                 roles = RolesPersonas.objects.filter(persona_id = usuario.persona.id).select_related('rol')
                 base64 = ''
                 if(usuario.persona.foto_perfil != ''):
@@ -167,7 +173,7 @@ class Custodiados(models.Model):
                 custodiados = Custodiados.objects.all()
             custodiados = custodiados.select_related('persona').values('id', 'cuidador_id',
                 'persona_id','persona__nombres', 'persona__apellidos', 'persona__cedula', 'persona__fecha_nacimiento', 'persona__foto_perfil')
-            file = File()
+            file = Image()
             for u in range(len(custodiados)):
                 if(custodiados[u]['persona__foto_perfil'] != ''):
                     file.ruta = custodiados[u]['persona__foto_perfil']

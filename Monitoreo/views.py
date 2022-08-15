@@ -1,11 +1,11 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from Monitoreo.reconocimiento import Expresion
+from Monitoreo.reconocimiento import ExpresionFacial
 from .models import *
 import json
 
 # Create your views here.
-class HistorialCustodiado(APIView):
+class vwHistorial(APIView):
     def get(self, request, format = None):
         if request.method == 'GET':
             try:
@@ -13,7 +13,7 @@ class HistorialCustodiado(APIView):
             except Exception as e:
                 return Response({'historial': 'error'})
 
-class GraficoCustodiado(APIView):
+class vwGrafico(APIView):
     def get(self, request, format = None):
         if request.method == 'GET':
             try:
@@ -21,17 +21,27 @@ class GraficoCustodiado(APIView):
             except Exception as e:
                 return Response({'grafico': 'error'})
 
-class Capturando(APIView):
-   
+class vwVigilancia(APIView):
+    def __init__(self):
+        self.expresionFacial = ExpresionFacial()
+
+    def get(self, request, format = None):
+        if request.method == 'GET':
+            try:
+                return Response({'vigilancia': Vigilancia.objects.filter().first().estado})
+            except Exception as e:
+                return Response({'vigilancia': 'error'})
+
     def put(self, request, format = None):
         if request.method == 'PUT':
             try:
-                expresion = Expresion()
                 json_data = json.loads(request.body.decode('utf-8'))
-                if json_data['monitoreando']:
-                    expresion.reconocer()
-                else:
-                    expresion.__del__
-                return Response({'capturando': json_data['monitoreando']})
+                respuesta = bool(json_data['vigilancia'])
+                vigilancia = Vigilancia.objects.filter().first()
+                vigilancia.estado = respuesta
+                vigilancia.save()
+                if respuesta:
+                    self.expresionFacial.reconocer()
+                return Response({'vigilancia': Vigilancia.objects.filter().first().estado})
             except Exception as e: 
-                return Response({'capturando': 'error'+str(e)})
+                return Response({'vigilancia': 'error'+str(e)})

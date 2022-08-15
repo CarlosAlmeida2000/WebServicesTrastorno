@@ -1,0 +1,9 @@
+[
+    {
+        "model": "Monitoreo.vigilancia",
+        "pk": 1,
+        "fields": {
+            "estado": false
+        }
+    }
+]

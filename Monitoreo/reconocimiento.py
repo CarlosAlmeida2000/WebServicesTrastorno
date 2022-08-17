@@ -22,7 +22,7 @@ class ExpresionFacial:
         self.custodiado = Custodiados()
         self.minutosDeteccion = 1
         self.byte = bytes()
-        # Creación de la red neuronal
+        # Creación de la red neuronal convolucional
         self.model = Sequential()
         # neurona
         self.model.add(Conv2D(32, kernel_size = (3, 3), activation = 'relu', input_shape = (48, 48, 1)))
@@ -44,11 +44,11 @@ class ExpresionFacial:
         cv2.ocl.setUseOpenCL(False)
         # diccionario que asigna a cada etiqueta una emoción (orden alfabético)
         self.emotion_dict = {0: 'Enfadado', 1: 'Asqueado', 2: 'Temeroso', 3: 'Feliz', 4: 'Neutral', 5: 'Triste', 6: 'Sorprendido'}
-        # cargar el detector de rostros
+        # cargar el clasificador de detección de rostros pre entrenado de OpenCV
         self.faceClassif = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         # cargar el modelo entrenado para reconocer expresiones faciales
         self.model.load_weights(self.rutaModelos + 'model.h5')
-        # cargar el modelo para el reconocimiento facial
+        # cargar el modelo para el reconocimiento facial: El reconocimiento facial se realiza mediante el clasificador de distancia y vecino más cercano
         self.face_recognizer = cv2.face.LBPHFaceRecognizer_create()
         self.face_recognizer.read(self.rutaModelos + 'modeloLBPHFace.xml')
         # se obtine la lista de personas a reconocer
@@ -68,16 +68,19 @@ class ExpresionFacial:
         historial.save()
 
     def reconocer(self):
-        # iniciar la alimentación de la webcam
+        # obtención del streaming de la cámara
         stream = urlopen('http://192.168.0.103:81/stream')
         while (Vigilancia.objects.filter().first().estado):
+            # lectura del stream con una resolución de 4096 
             self.byte += stream.read(4096)
             a = self.byte.find(b'\xff\xd8')
             b = self.byte.find(b'\xff\xd9')
             if a != -1 and b != -1:
                 imagen = self.byte[a:b + 2]
                 self.byte = self.byte[b + 2:]
+                # si recibimos imagen
                 if imagen:
+                    # Lee una imagen de un búfer en la memoria.
                     video = cv2.imdecode(np.fromstring(imagen, dtype = np.uint8), cv2.IMREAD_COLOR)
                     # Encuentra la cascada haar para dibujar la caja delimitadora alrededor de la cara
                     gray = cv2.cvtColor(video, cv2.COLOR_BGR2GRAY)

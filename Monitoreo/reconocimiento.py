@@ -7,7 +7,7 @@ from Monitoreo.models import Vigilancia, Historial
 from django.db.models import Q
 from Persona.models import Custodiados
 from urllib.request import urlopen
-from PIL import Image as im
+from PIL import Image
 import os
 import cv2
 import numpy as np
@@ -21,6 +21,7 @@ class ExpresionFacial:
         self.expresion_facial = ''
         self.custodiado = Custodiados()
         self.minutosDeteccion = 1
+        self.byte = bytes()
         # Creación de la red neuronal
         self.model = Sequential()
         # neurona
@@ -50,33 +51,33 @@ class ExpresionFacial:
         # cargar el modelo para el reconocimiento facial
         self.face_recognizer = cv2.face.LBPHFaceRecognizer_create()
         self.face_recognizer.read(self.rutaModelos + 'modeloLBPHFace.xml')
-        # se obtine la lista de personas custodiadas a reconocer
+        # se obtine la lista de personas a reconocer
         self.custodiadosReconocer = os.listdir(self.dataTrained)
     
     # se registra el historial de la persona
-    def guardarHistorial(self):
+    def guardarHistorial(self, rostro):
         historial = Historial()
         historial.fecha_hora = datetime.now()
         historial.expresion_facial = self.expresion_facial
         historial.custodiado = self.custodiado[0]
-        #imagen = im.fromarray(rostro)
-        #print("tipo "+ str(type(imagen)))
-        #historial.imagen_expresion = imagen
+        #img = Image.fromarray(rostro)
+        # imagen = im.fromarray(gray)
+        # print("tipo "+ str(type(imagen)))
+        #historial.imagen_expresion = img
         #historial.imagen_expresion.name = 'persona_id_' + persona_id + '_fecha' + str(historial.fecha_hora)
         historial.save()
 
     def reconocer(self):
         # iniciar la alimentación de la webcam
         stream = urlopen('http://192.168.0.103:81/stream')
-        byte = bytes()
         while (Vigilancia.objects.filter().first().estado):
-            byte += stream.read(4096)
-            a = byte.find(b'\xff\xd8')
-            b = byte.find(b'\xff\xd9')
+            self.byte += stream.read(4096)
+            a = self.byte.find(b'\xff\xd8')
+            b = self.byte.find(b'\xff\xd9')
             if a != -1 and b != -1:
-                imagen = byte[a:b + 2]
-                byte = byte[b + 2:]
-                if imagen :
+                imagen = self.byte[a:b + 2]
+                self.byte = self.byte[b + 2:]
+                if imagen:
                     video = cv2.imdecode(np.fromstring(imagen, dtype = np.uint8), cv2.IMREAD_COLOR)
                     # Encuentra la cascada haar para dibujar la caja delimitadora alrededor de la cara
                     gray = cv2.cvtColor(video, cv2.COLOR_BGR2GRAY)
@@ -111,14 +112,13 @@ class ExpresionFacial:
                                     fecha_historial = datetime.strptime(ultimo_historial[0].fecha_hora.strftime('%Y-%m-%d %H:%M:%S.%f') , '%Y-%m-%d %H:%M:%S.%f')
                                     minutos = (datetime.now() - fecha_historial).seconds * 0.0167
                                     if (minutos > self.minutosDeteccion):
-                                        self.guardarHistorial()
+                                        self.guardarHistorial(rostro)
                                 else:
-                                    self.guardarHistorial()
+                                    self.guardarHistorial(rostro)
                         else:
                             cv2.putText(video,'Desconocido',(x, y - 20), 2, 0.8,(0, 0, 255),1,cv2.LINE_AA)
                             cv2.rectangle(video, (x, y),(x + w, y + h),(0, 0, 255), 2)
-                    cv2.imshow('Video', cv2.resize(video,(1600, 860), interpolation = cv2.INTER_CUBIC))
+                    cv2.imshow('Video', cv2.resize(video,(1500, 760), interpolation = cv2.INTER_CUBIC))
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         cv2.destroyAllWindows()
-        

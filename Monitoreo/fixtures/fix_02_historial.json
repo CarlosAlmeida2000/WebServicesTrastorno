@@ -26,7 +26,7 @@
             "fecha_hora": "2022-08-03 8:25",
             "imagen_expresion": " ",
             "expresion_facial": "Triste",
-            "custodiado_id": 2
+            "custodiado_id": 1
         }
     },
     {
@@ -35,8 +35,8 @@
         "fields": {
             "fecha_hora": "2022-08-03 9:02",
             "imagen_expresion": " ",
-            "expresion_facial": "Neutro",
-            "custodiado_id": 3
+            "expresion_facial": "Neutral",
+            "custodiado_id": 1
         }
     },
     {

@@ -5,9 +5,7 @@ from django.db import transaction
 from fernet_fields import EncryptedTextField
 from django.db import IntegrityError
 from Persona.image import Image
-from Monitoreo.entrenamiento_facial import EntrenamientoFacial
 import os
-import threading
 
 # Create your models here.
 class Roles(models.Model):
@@ -48,9 +46,6 @@ class Personas(models.Model):
                 self.save()
                 if(ruta_img_borrar != ''):
                     os.remove(ruta_img_borrar)
-                # Implementación de un hilo para realizar el entrenamiento del modelo de reconocimiento facial
-                hiloEntrenar = threading.Thread(target = self.entrenar_rostros)
-                hiloEntrenar.start()
             return 'si', self
         except IntegrityError:
             transaction.savepoint_rollback(punto_guardado)
@@ -58,16 +53,11 @@ class Personas(models.Model):
         except Exception as e: 
             transaction.savepoint_rollback(punto_guardado)
             return 'error', None
-    
-    def entrenar_rostros(self):
-        entrenar_rostros = EntrenamientoFacial()
-        entrenar_rostros.entrenar()
-    
+
 class RolesPersonas(models.Model):
     persona = models.ForeignKey('Persona.Personas', on_delete = models.PROTECT, related_name = 'roles_persona')
     rol = models.ForeignKey('Persona.Roles', on_delete = models.PROTECT)
     
-
 class Usuarios(models.Model):
     nom_usuario = models.CharField(max_length = 20, unique = True)
     clave = EncryptedTextField()

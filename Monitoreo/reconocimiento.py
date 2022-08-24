@@ -23,7 +23,8 @@ class ExpresionFacial:
         self.byte = bytes()
         # Creación de la red neuronal convolucional
         self.model = Sequential()
-        # neurona
+        # neurona - capa de entrada
+        # Capa de convolución 2D (por ejemplo, convolución espacial sobre imágenes)
         self.model.add(Conv2D(32, kernel_size = (3, 3), activation = 'relu', input_shape = (48, 48, 1)))
         self.model.add(Conv2D(64, kernel_size = (3, 3), activation = 'relu'))
         self.model.add(MaxPooling2D(pool_size = (2, 2)))
@@ -80,11 +81,10 @@ class ExpresionFacial:
                     if imagen:
                         # Lee una imagen de un búfer en la memoria.
                         video = cv2.imdecode(np.fromstring(imagen, dtype = np.uint8), cv2.IMREAD_COLOR)
-                        # Encuentra la cascada haar para dibujar la caja delimitadora alrededor de la cara
                         gray = cv2.cvtColor(video, cv2.COLOR_BGR2GRAY)
                         auxFrame = gray.copy()
                         auxFrame_color = video.copy()
-                        # detectando rostros
+                        # detectando rostros - encuentra la cascada haar para dibujar la caja delimitadora alrededor de la cara
                         faces = self.faceClassif.detectMultiScale(gray, scaleFactor = 1.3, minNeighbors = 5)
                         # recorriendo rostros 
                         for (x, y, w, h) in faces:

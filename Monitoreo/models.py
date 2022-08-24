@@ -3,7 +3,7 @@ from django.db.models import Q, Value
 from django.db.models.functions import Concat
 from Persona.models import Custodiados
 from Persona.image import Image
-from datetime import datetime
+from datetime import datetime, date
 
 # Create your models here.
 
@@ -54,10 +54,20 @@ class Historial(models.Model):
                 historial = custodiado.historial_custodiado.all().values()
                 fecha_minima = (historial.order_by('fecha_hora'))[0]['fecha_hora']
                 fecha_maxima = (historial.order_by('-fecha_hora'))[0]['fecha_hora']
+                # calcular los días que se llevan de registro en el historial
+                fecha_actual = date(int(str(fecha_minima.strftime('%Y'))), 
+                                    int(str(fecha_minima.strftime('%m'))), 
+                                    int(str(fecha_minima.strftime('%d'))))
+
+                fecha_fin = date(int(str(fecha_maxima.strftime('%Y'))), 
+                                int(str(fecha_maxima.strftime('%m'))), 
+                                int(str(fecha_maxima.strftime('%d'))))
+                diferencia = fecha_fin - fecha_actual
                 historial_grafico =  [{
                     'custodiado__persona__nombres': custodiado.persona.nombres,
                     'custodiado__persona__cedula': custodiado.persona.cedula,
                     'fecha_inicio_fin': 'Desde '+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + ' hasta ' + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
+                    'dias_historial': diferencia.days,
                     'enfadado': (historial.filter(expresion_facial = 'Enfadado').count()),
                     'asqueado': (historial.filter(expresion_facial = 'Asqueado').count()),
                     'temeroso': (historial.filter(expresion_facial = 'Temeroso').count()),
@@ -65,7 +75,6 @@ class Historial(models.Model):
                     'neutral': (historial.filter(expresion_facial = 'Neutral').count()),
                     'triste': (historial.filter(expresion_facial = 'Triste').count()),
                     'sorprendido': (historial.filter(expresion_facial = 'Sorprendido').count()),
-                    # AQUI EJECUTAR EL ALGORITMO DE PREDICCIÓN
                     'prediccion_trastorno': 0.0
                 }]
                 return historial_grafico

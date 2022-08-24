@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from Monitoreo.reconocimiento import ExpresionFacial
 from Monitoreo.entrenamiento_facial import EntrenamientoFacial
 from .models import *
-import json
+import json, threading
 
 # Create your views here.
 class vwHistorial(APIView):
@@ -52,7 +52,8 @@ class vwVigilancia(APIView):
                 vigilancia.estado = respuesta
                 vigilancia.save()
                 if respuesta:
-                    self.expresionFacial.reconocer()
+                    hilo_vigilar = threading.Thread(target=self.expresionFacial.reconocer)
+                    hilo_vigilar.start()
                 return Response({'vigilancia': Vigilancia.objects.filter().first().estado})
             except Exception as e: 
                 return Response({'vigilancia': 'error'})

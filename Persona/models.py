@@ -153,15 +153,15 @@ class Custodiados(models.Model):
             if 'id' in request.GET and 'cuidador_id' in request.GET:
                 custodiados = Custodiados.objects.filter(Q(pk = request.GET['id']) & Q(cuidador__pk = request.GET['cuidador_id']))   
             elif 'persona__cedula' in request.GET and 'cuidador_id' in request.GET:
-                custodiados = Custodiados.objects.filter(Q(custodiado__cedula__icontains = request.GET['persona__cedula']) & Q(cuidador__pk = request.GET['cuidador_id']))   
+                custodiados = Custodiados.objects.filter(Q(persona__cedula__icontains = request.GET['persona__cedula']) & Q(cuidador__pk = request.GET['cuidador_id']))   
             elif 'nombres_apellidos' in request.GET and 'cuidador_id' in request.GET:
-                custodiados = (Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id']).select_related('custodiado')).annotate(nombres_completos = Concat('persona__nombres', Value(' '), 'persona__apellidos'))
+                custodiados = (Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id'])).annotate(nombres_completos = Concat('persona__nombres', Value(' '), 'persona__apellidos'))
                 custodiados = custodiados.filter(nombres_completos__icontains = request.GET['nombres_apellidos'])
             elif 'cuidador_id' in request.GET:
                 custodiados = Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id'])
             else:
                 custodiados = Custodiados.objects.all()
-            custodiados = custodiados.select_related('persona').values('id', 'cuidador_id',
+            custodiados = custodiados.values('id', 'cuidador_id',
                 'persona_id','persona__nombres', 'persona__apellidos', 'persona__cedula', 'persona__fecha_nacimiento', 'persona__foto_perfil')
             file = Image()
             for u in range(len(custodiados)):

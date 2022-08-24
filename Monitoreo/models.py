@@ -32,7 +32,7 @@ class Historial(models.Model):
             else:
                 custodiados = Custodiados.objects.all()
                 historial = Historial.objects.all().exclude(~Q(custodiado_id__in = custodiados.values('id')))
-            historial = historial.values('id', 'fecha_hora', 'expresion_facial', 'custodiado_id', 'custodiado__persona__nombres', 'imagen_expresion')
+            historial = historial.values('id', 'fecha_hora', 'expresion_facial', 'custodiado_id', 'custodiado__persona__nombres', 'custodiado__persona__cedula', 'imagen_expresion')
             file = Image()
             for u in range(len(historial)):
                 if(historial[u]['imagen_expresion'] != ''):
@@ -48,7 +48,7 @@ class Historial(models.Model):
             if 'persona__cedula' in request.GET and 'cuidador_id' in request.GET:
                 custodiado = Custodiados.objects.get(Q(persona__cedula__icontains = request.GET['persona__cedula']) & Q(cuidador__pk = request.GET['cuidador_id']))   
             elif 'nombres_apellidos' in request.GET and 'cuidador_id' in request.GET:
-                custodiado = (Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id']).select_related('persona')).annotate(nombres_completos = Concat('persona__nombres', Value(' '), 'persona__apellidos'))
+                custodiado = (Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id'])).annotate(nombres_completos = Concat('persona__nombres', Value(' '), 'persona__apellidos'))
                 custodiado = custodiado.get(nombres_completos__icontains = request.GET['nombres_apellidos'])
             if custodiado:
                 historial = custodiado.historial_custodiado.all().values()
@@ -56,6 +56,7 @@ class Historial(models.Model):
                 fecha_maxima = (historial.order_by('-fecha_hora'))[0]['fecha_hora']
                 historial_grafico =  [{
                     'custodiado__persona__nombres': custodiado.persona.nombres,
+                    'custodiado__persona__cedula': custodiado.persona.cedula,
                     'fecha_inicio_fin': 'Desde '+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + ' hasta ' + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
                     'enfadado': (historial.filter(expresion_facial = 'Enfadado').count()),
                     'asqueado': (historial.filter(expresion_facial = 'Asqueado').count()),

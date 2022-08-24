@@ -21,7 +21,7 @@ class EntrenamientoFacial:
         try:
             os.makedirs(self.dataTrained + '\\' + str(self.persona_id), exist_ok = True)
             # se crean las 300 imágenes de la persona custodiada para después realizar el entrenamiento
-            stream = urlopen('http://192.168.0.103:81/stream')
+            stream = urlopen('http://192.168.0.105:81/stream')
             while True:
                 self.byte += stream.read(4096)
                 a = self.byte.find(b'\xff\xd8')
@@ -34,11 +34,11 @@ class EntrenamientoFacial:
                         video =  imutils.resize(video, width = 640)
                         gray = cv2.cvtColor(video, cv2.COLOR_BGR2GRAY)
                         auxFrame = video.copy()
-                        faces = self.faceClassif.detectMultiScale(gray,1.3,5)
+                        faces = self.faceClassif.detectMultiScale(gray, 1.3, 5)
                         for (x, y, w, h) in faces:
-                            cv2.rectangle(video, (x,y),(x+w,y+h),(0,255,0),2)
-                            rostro = auxFrame[y:y+h,x:x+w]
-                            rostro = cv2.resize(rostro,(150,150),interpolation=cv2.INTER_CUBIC)
+                            cv2.rectangle(video, (x, y),(x + w, y + h),(0, 255, 0), 2)
+                            rostro = auxFrame[y:y + h, x:x + w]
+                            rostro = cv2.resize(rostro,(150, 150),interpolation = cv2.INTER_CUBIC)
                             cv2.imwrite(self.dataTrained + '\\' + str(self.persona_id) + '/rotro_{}.png'.format(self.contImagenes), rostro)
                             self.contImagenes += 1
                         cv2.imshow('Video', cv2.resize(video,(1500, 760), interpolation = cv2.INTER_CUBIC))

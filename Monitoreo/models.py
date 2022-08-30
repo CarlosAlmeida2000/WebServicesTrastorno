@@ -3,7 +3,7 @@ from django.db.models import Q, Value
 from django.db.models.functions import Concat
 from Persona.models import Custodiados
 from Persona.image import Image
-from datetime import datetime, date
+from datetime import date
 
 # Create your models here.
 
@@ -32,7 +32,7 @@ class Historial(models.Model):
             else:
                 custodiados = Custodiados.objects.all()
                 historial = Historial.objects.all().exclude(~Q(custodiado_id__in = custodiados.values('id')))
-            historial = historial.values('id', 'fecha_hora', 'expresion_facial', 'custodiado_id', 'custodiado__persona__nombres', 'custodiado__persona__cedula', 'imagen_expresion')
+            historial = historial.values('id', 'fecha_hora', 'expresion_facial', 'custodiado_id', 'custodiado__persona__nombres', 'custodiado__persona__apellidos', 'custodiado__persona__cedula', 'imagen_expresion')
             file = Image()
             for u in range(len(historial)):
                 if(historial[u]['imagen_expresion'] != ''):
@@ -41,45 +41,69 @@ class Historial(models.Model):
             return list(historial)
         except Exception as e: 
             return 'error'
+    
+    @staticmethod
+    def crearJson(custodiados, historial, grafico_general):
+        fecha_minima = (historial.order_by('fecha_hora'))[0]['fecha_hora']
+        fecha_maxima = (historial.order_by('-fecha_hora'))[0]['fecha_hora']
+        # calcular los días que se llevan de registro en el historial
+        fecha_actual = date(int(str(fecha_minima.strftime('%Y'))), 
+                            int(str(fecha_minima.strftime('%m'))), 
+                            int(str(fecha_minima.strftime('%d'))))
+        fecha_fin = date(int(str(fecha_maxima.strftime('%Y'))), 
+                        int(str(fecha_maxima.strftime('%m'))), 
+                        int(str(fecha_maxima.strftime('%d'))))
+        diferencia = fecha_fin - fecha_actual
         
+        if grafico_general:
+            historial_grafico =  [{ 
+            'fecha_inicio_fin': 'Desde '+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + ' hasta ' + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
+            'dias_historial': diferencia.days,
+            'enfadado': (historial.filter(expresion_facial = 'Enfadado').count()),
+            'asqueado': (historial.filter(expresion_facial = 'Asqueado').count()),
+            'temeroso': (historial.filter(expresion_facial = 'Temeroso').count()),
+            'feliz': (historial.filter(expresion_facial = 'Feliz').count()),
+            'neutral': (historial.filter(expresion_facial = 'Neutral').count()),
+            'triste': (historial.filter(expresion_facial = 'Triste').count()),
+            'sorprendido': (historial.filter(expresion_facial = 'Sorprendido').count()),
+            }]
+        else:
+            historial_grafico =  [{ 
+            'fecha_inicio_fin': 'Desde '+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + ' hasta ' + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
+            'custodiado__persona__nombres': custodiados.persona.nombres,
+            'custodiado__persona__apellidos': custodiados.persona.apellidos,
+            'custodiado__persona__cedula': custodiados.persona.cedula,
+            'dias_historial': diferencia.days,
+            'enfadado': (historial.filter(expresion_facial = 'Enfadado').count()),
+            'asqueado': (historial.filter(expresion_facial = 'Asqueado').count()),
+            'temeroso': (historial.filter(expresion_facial = 'Temeroso').count()),
+            'feliz': (historial.filter(expresion_facial = 'Feliz').count()),
+            'neutral': (historial.filter(expresion_facial = 'Neutral').count()),
+            'triste': (historial.filter(expresion_facial = 'Triste').count()),
+            'sorprendido': (historial.filter(expresion_facial = 'Sorprendido').count()),
+            'prediccion_trastorno': str(0.00)
+            }]
+        return historial_grafico
+
     @staticmethod
     def obtener_grafico(request):
         try:
+            custodiados = Custodiados()
+            grafico_general = False
             if 'persona__cedula' in request.GET and 'cuidador_id' in request.GET:
-                custodiado = Custodiados.objects.get(Q(persona__cedula__icontains = request.GET['persona__cedula']) & Q(cuidador__pk = request.GET['cuidador_id']))   
+                custodiados = Custodiados.objects.filter(Q(persona__cedula__icontains = request.GET['persona__cedula']) & Q(cuidador__pk = request.GET['cuidador_id'])).first()   
             elif 'nombres_apellidos' in request.GET and 'cuidador_id' in request.GET:
-                custodiado = (Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id'])).annotate(nombres_completos = Concat('persona__nombres', Value(' '), 'persona__apellidos'))
-                custodiado = custodiado.get(nombres_completos__icontains = request.GET['nombres_apellidos'])
-            if custodiado:
-                historial = custodiado.historial_custodiado.all().values()
-                fecha_minima = (historial.order_by('fecha_hora'))[0]['fecha_hora']
-                fecha_maxima = (historial.order_by('-fecha_hora'))[0]['fecha_hora']
-                # calcular los días que se llevan de registro en el historial
-                fecha_actual = date(int(str(fecha_minima.strftime('%Y'))), 
-                                    int(str(fecha_minima.strftime('%m'))), 
-                                    int(str(fecha_minima.strftime('%d'))))
-
-                fecha_fin = date(int(str(fecha_maxima.strftime('%Y'))), 
-                                int(str(fecha_maxima.strftime('%m'))), 
-                                int(str(fecha_maxima.strftime('%d'))))
-                diferencia = fecha_fin - fecha_actual
-                historial_grafico =  [{
-                    'custodiado__persona__nombres': custodiado.persona.nombres,
-                    'custodiado__persona__cedula': custodiado.persona.cedula,
-                    'fecha_inicio_fin': 'Desde '+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + ' hasta ' + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
-                    'dias_historial': diferencia.days,
-                    'enfadado': (historial.filter(expresion_facial = 'Enfadado').count()),
-                    'asqueado': (historial.filter(expresion_facial = 'Asqueado').count()),
-                    'temeroso': (historial.filter(expresion_facial = 'Temeroso').count()),
-                    'feliz': (historial.filter(expresion_facial = 'Feliz').count()),
-                    'neutral': (historial.filter(expresion_facial = 'Neutral').count()),
-                    'triste': (historial.filter(expresion_facial = 'Triste').count()),
-                    'sorprendido': (historial.filter(expresion_facial = 'Sorprendido').count()),
-                    'prediccion_trastorno': 0.0
-                }]
-                return historial_grafico
+                custodiados = (Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id'])).annotate(nombres_completos = Concat('persona__nombres', Value(' '), 'persona__apellidos'))
+                custodiados = custodiados.filter(nombres_completos__icontains = request.GET['nombres_apellidos']).first()
+            elif 'cuidador_id' in request.GET:
+                grafico_general = True
+                custodiados = Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id'])
+            if grafico_general:
+                historial = Historial.objects.all().exclude(~Q(custodiado_id__in = custodiados.values('id'))).values()
+                return Historial.crearJson(custodiados, historial, grafico_general)
             else:
-                return []
+                historial = custodiados.historial_custodiado.all().values()
+                return Historial.crearJson(custodiados, historial, grafico_general)
         except Custodiados.DoesNotExist:    
             return []
         except Exception as e: 

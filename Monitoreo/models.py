@@ -67,6 +67,8 @@ class Historial(models.Model):
                 apellidos = ''
                 cedula = ''
                 una = True
+                fecha_minima = datetime.now()
+                fecha_maxima = datetime.now()
                 for his in historial:
                     if una:
                         fecha_minima = his.fecha_hora
@@ -95,31 +97,31 @@ class Historial(models.Model):
                         fecha_minima = his.fecha_hora
                     if f_maxima > fecha_maxima:
                         fecha_maxima = his.fecha_hora
-
-                # calcular los días que se llevan de registro en el historial
-                fecha_actual = date(int(str(fecha_minima.strftime('%Y'))), 
-                                    int(str(fecha_minima.strftime('%m'))), 
-                                    int(str(fecha_minima.strftime('%d'))))
-                fecha_fin = date(int(str(fecha_maxima.strftime('%Y'))), 
-                                int(str(fecha_maxima.strftime('%m'))), 
-                                int(str(fecha_maxima.strftime('%d'))))
-                diferencia = fecha_fin - fecha_actual
-                object_json =  { 
-                'fecha_inicio_fin': 'Desde '+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + ' hasta ' + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
-                'custodiado__persona__nombres': nombres,
-                'custodiado__persona__apellidos': apellidos,
-                'custodiado__persona__cedula': cedula,
-                'dias_historial': diferencia.days,
-                'enfadado': enfadado,
-                'asqueado': asqueado,
-                'temeroso': temeroso,
-                'feliz': feliz,
-                'neutral': neutral,
-                'triste': triste,
-                'sorprendido': sorprendido,
-                'prediccion_trastorno': str(0.00)
-                }
-                historial_grafico.append(object_json)
+                if (len(historial)):
+                    # calcular los días que se llevan de registro en el historial
+                    fecha_actual = date(int(str(fecha_minima.strftime('%Y'))), 
+                                        int(str(fecha_minima.strftime('%m'))), 
+                                        int(str(fecha_minima.strftime('%d'))))
+                    fecha_fin = date(int(str(fecha_maxima.strftime('%Y'))), 
+                                    int(str(fecha_maxima.strftime('%m'))), 
+                                    int(str(fecha_maxima.strftime('%d'))))
+                    diferencia = fecha_fin - fecha_actual
+                    object_json =  { 
+                    'fecha_inicio_fin': 'Desde '+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + ' hasta ' + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
+                    'custodiado__persona__nombres': nombres,
+                    'custodiado__persona__apellidos': apellidos,
+                    'custodiado__persona__cedula': cedula,
+                    'dias_historial': diferencia.days,
+                    'enfadado': enfadado,
+                    'asqueado': asqueado,
+                    'temeroso': temeroso,
+                    'feliz': feliz,
+                    'neutral': neutral,
+                    'triste': triste,
+                    'sorprendido': sorprendido,
+                    'prediccion_trastorno': str(0.00)
+                    }
+                    historial_grafico.append(object_json)
             return historial_grafico
         except Custodiados.DoesNotExist:    
             return []

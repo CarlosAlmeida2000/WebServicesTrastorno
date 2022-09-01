@@ -56,19 +56,10 @@ class Historial(models.Model):
             historial_grafico = []
             for cus in custodiados: 
                 historial = cus.historial_custodiado.all()
-                enfadado = 0
-                asqueado = 0
-                temeroso = 0
-                feliz = 0
-                neutral = 0
-                triste = 0
-                sorprendido = 0
-                nombres = ''
-                apellidos = ''
-                cedula = ''
+                enfadado, asqueado, temeroso, feliz, neutral, triste, sorprendido = 0, 0, 0, 0, 0, 0, 0
+                nombres, apellidos, cedula = '', '', ''
                 una = True
-                fecha_minima = datetime.now()
-                fecha_maxima = datetime.now()
+                fecha_minima, fecha_maxima = datetime.now(), datetime.now()
                 for his in historial:
                     if una:
                         fecha_minima = his.fecha_hora
@@ -106,6 +97,11 @@ class Historial(models.Model):
                                     int(str(fecha_maxima.strftime('%m'))), 
                                     int(str(fecha_maxima.strftime('%d'))))
                     diferencia = fecha_fin - fecha_actual
+                    # Si existe una semana de registro del historial, se predice el trastorno
+                    prediccion = 'Para la predicción de trastorno debe tener 7 días de registro de historial'
+                    if(diferencia.days > 7):
+                        prediccion = Historial.prediccion_trastorno(diferencia.days, historial)
+
                     object_json =  { 
                     'fecha_inicio_fin': 'Desde '+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + ' hasta ' + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
                     'custodiado__persona__nombres': nombres,
@@ -119,7 +115,7 @@ class Historial(models.Model):
                     'neutral': neutral,
                     'triste': triste,
                     'sorprendido': sorprendido,
-                    'prediccion_trastorno': str(0.00)
+                    'prediccion_trastorno': prediccion
                     }
                     historial_grafico.append(object_json)
             return historial_grafico
@@ -127,3 +123,22 @@ class Historial(models.Model):
             return []
         except Exception as e: 
             return 'error'
+
+    @staticmethod
+    def prediccion_trastorno(todal_dias, historial):
+        frecuencia_enfadado = list()
+        frecuencia_asqueado = list()
+        frecuencia_temeroso = list()
+        frecuencia_feliz = list()
+        frecuencia_neutral = list()
+        frecuencia_triste = list()
+        frecuencia_sorprendido = list()
+        dias_historial = list()
+
+        dias_historial = [(i + 1) for i in range(todal_dias)]
+        #print(dias_historial)
+        #h = historial.order_by('fecha_hora').distinct('fecha_hora').values('fecha_hora')
+        #print(len(h))
+        
+        return ''
+        

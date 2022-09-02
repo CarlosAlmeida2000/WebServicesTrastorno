@@ -3,7 +3,7 @@ from django.db.models import Q, Value
 from django.db.models.functions import Concat
 from Persona.models import Custodiados
 from Persona.image import Image
-from datetime import date, datetime
+from sklearn import linear_model
 
 # Create your models here.
 
@@ -12,6 +12,7 @@ class Vigilancia(models.Model):
 
 class Historial(models.Model):
     fecha_hora = models.DateTimeField()
+    dia = models.IntegerField()
     imagen_expresion = models.ImageField(upload_to = 'Expresiones_detectadas', null = True, blank = True)
     expresion_facial = models.CharField(max_length = 15)
     custodiado = models.ForeignKey('Persona.Custodiados', on_delete = models.PROTECT, related_name = "historial_custodiado")
@@ -32,7 +33,7 @@ class Historial(models.Model):
             else:
                 custodiados = Custodiados.objects.all()
                 historial = Historial.objects.all().exclude(~Q(custodiado_id__in = custodiados.values('id')))
-            historial = historial.values('id', 'fecha_hora', 'expresion_facial', 'custodiado_id', 'custodiado__persona__nombres', 'custodiado__persona__apellidos', 'custodiado__persona__cedula', 'imagen_expresion')
+            historial = historial.values('id', 'fecha_hora', 'dia', 'expresion_facial', 'custodiado_id', 'custodiado__persona__nombres', 'custodiado__persona__apellidos', 'custodiado__persona__cedula', 'imagen_expresion')
             file = Image()
             for u in range(len(historial)):
                 if(historial[u]['imagen_expresion'] != ''):
@@ -55,66 +56,30 @@ class Historial(models.Model):
                 custodiados = Custodiados.objects.filter(cuidador__pk = request.GET['cuidador_id'])
             historial_grafico = []
             for cus in custodiados: 
-                historial = cus.historial_custodiado.all()
-                enfadado, asqueado, temeroso, feliz, neutral, triste, sorprendido = 0, 0, 0, 0, 0, 0, 0
-                nombres, apellidos, cedula = '', '', ''
-                una = True
-                fecha_minima, fecha_maxima = datetime.now(), datetime.now()
-                for his in historial:
-                    if una:
-                        fecha_minima = his.fecha_hora
-                        fecha_maxima = his.fecha_hora
-                        una = False
-                    f_minima = his.fecha_hora
-                    f_maxima = his.fecha_hora
-                    nombres = his.custodiado.persona.nombres
-                    apellidos = his.custodiado.persona.apellidos
-                    cedula = his.custodiado.persona.cedula
-                    if his.expresion_facial == 'Enfadado':
-                        enfadado += 1
-                    if his.expresion_facial == 'Asqueado':
-                        asqueado += 1
-                    if his.expresion_facial == 'Temeroso':
-                        temeroso += 1
-                    if his.expresion_facial == 'Feliz':
-                        feliz += 1
-                    if his.expresion_facial == 'Neutral':
-                        neutral += 1
-                    if his.expresion_facial == 'Triste':
-                        triste += 1
-                    if his.expresion_facial == 'Sorprendido':
-                        sorprendido += 1
-                    if f_minima < fecha_minima:
-                        fecha_minima = his.fecha_hora
-                    if f_maxima > fecha_maxima:
-                        fecha_maxima = his.fecha_hora
+                historial = cus.historial_custodiado.all().values()
                 if (len(historial)):
                     # calcular los días que se llevan de registro en el historial
-                    fecha_actual = date(int(str(fecha_minima.strftime('%Y'))), 
-                                        int(str(fecha_minima.strftime('%m'))), 
-                                        int(str(fecha_minima.strftime('%d'))))
-                    fecha_fin = date(int(str(fecha_maxima.strftime('%Y'))), 
-                                    int(str(fecha_maxima.strftime('%m'))), 
-                                    int(str(fecha_maxima.strftime('%d'))))
-                    diferencia = fecha_fin - fecha_actual
+                    fecha_minima = (historial.order_by('fecha_hora'))[0]['fecha_hora']
+                    fecha_maxima = (historial.order_by('-fecha_hora'))[0]['fecha_hora']
                     # Si existe una semana de registro del historial, se predice el trastorno
-                    prediccion = 'Para la predicción de trastorno debe tener 7 días de registro de historial'
-                    if(diferencia.days > 7):
-                        prediccion = Historial.prediccion_trastorno(diferencia.days, historial)
+                    prediccion = 'Para la predicción del trastorno se debe tener 7 días de registros en el historial'
+                    total_dias = historial.order_by('-dia')[0]['dia']
+                    if(total_dias > 1):
+                        prediccion = Historial.prediccion_trastorno(total_dias, historial)
 
                     object_json =  { 
                     'fecha_inicio_fin': 'Desde '+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + ' hasta ' + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
-                    'custodiado__persona__nombres': nombres,
-                    'custodiado__persona__apellidos': apellidos,
-                    'custodiado__persona__cedula': cedula,
-                    'dias_historial': diferencia.days,
-                    'enfadado': enfadado,
-                    'asqueado': asqueado,
-                    'temeroso': temeroso,
-                    'feliz': feliz,
-                    'neutral': neutral,
-                    'triste': triste,
-                    'sorprendido': sorprendido,
+                    'custodiado__persona__nombres': cus.persona.nombres,
+                    'custodiado__persona__apellidos': cus.persona.apellidos,
+                    'custodiado__persona__cedula': cus.persona.cedula,
+                    'dias_historial': total_dias,
+                    'enfadado': (historial.filter(expresion_facial = 'Enfadado').count()),
+                    'asqueado': (historial.filter(expresion_facial = 'Asqueado').count()),
+                    'temeroso': (historial.filter(expresion_facial = 'Temeroso').count()),
+                    'feliz': (historial.filter(expresion_facial = 'Feliz').count()),
+                    'neutral': (historial.filter(expresion_facial = 'Neutral').count()),
+                    'triste': (historial.filter(expresion_facial = 'Triste').count()),
+                    'sorprendido': (historial.filter(expresion_facial = 'Sorprendido').count()),
                     'prediccion_trastorno': prediccion
                     }
                     historial_grafico.append(object_json)
@@ -125,7 +90,7 @@ class Historial(models.Model):
             return 'error'
 
     @staticmethod
-    def prediccion_trastorno(todal_dias, historial):
+    def prediccion_trastorno(total_dias, historial):
         frecuencia_enfadado = list()
         frecuencia_asqueado = list()
         frecuencia_temeroso = list()
@@ -134,11 +99,48 @@ class Historial(models.Model):
         frecuencia_triste = list()
         frecuencia_sorprendido = list()
         dias_historial = list()
+        predicciones_emocion = list()
 
-        dias_historial = [(i + 1) for i in range(todal_dias)]
-        #print(dias_historial)
-        #h = historial.order_by('fecha_hora').distinct('fecha_hora').values('fecha_hora')
-        #print(len(h))
+        dias_historial = [[(i + 1)] for i in range(total_dias)]
+        print(dias_historial)
+
+        for d in dias_historial:
+            frecuencia_enfadado.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Enfadado')).count())
+            frecuencia_asqueado.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Asqueado')).count())
+            frecuencia_temeroso.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Temeroso')).count())
+            frecuencia_feliz.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Feliz')).count())
+            frecuencia_neutral.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Neutral')).count())
+            frecuencia_triste.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Triste')).count())
+            frecuencia_sorprendido.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Sorprendido')).count())
         
+        print('Enfadado: ', frecuencia_enfadado)
+        print('Asqueado: ', frecuencia_asqueado)
+        print('Temeroso:', frecuencia_temeroso)
+        print('Feliz: ', frecuencia_feliz)
+        print('Neutral: ', frecuencia_neutral)
+        print('Triste:', frecuencia_triste)
+        print('Sorprendido: ', frecuencia_sorprendido)
+        predicciones_emocion.append(Historial.regresion_logistica(dias_historial, frecuencia_enfadado, (total_dias + 1)))
+        predicciones_emocion.append(Historial.regresion_logistica(dias_historial, frecuencia_asqueado, (total_dias + 1)))
+        predicciones_emocion.append(Historial.regresion_logistica(dias_historial, frecuencia_temeroso, (total_dias + 1)))
+        predicciones_emocion.append(Historial.regresion_logistica(dias_historial, frecuencia_feliz, (total_dias + 1)))
+        predicciones_emocion.append(Historial.regresion_logistica(dias_historial, frecuencia_neutral, (total_dias + 1)))
+        predicciones_emocion.append(Historial.regresion_logistica(dias_historial, frecuencia_triste, (total_dias + 1)))
+        predicciones_emocion.append(Historial.regresion_logistica(dias_historial, frecuencia_sorprendido, (total_dias + 1)))
+
+        print('prediciones de cada emoción: ', predicciones_emocion)
+
+
+
+
         return ''
+
+    @staticmethod
+    def regresion_logistica(x_train, y_train, x_prediction):
+        # Creamos el objeto de Regresión Logística
+        regresion = linear_model.LogisticRegression()
+        # Entrenamos nuestro modelo
+        regresion.fit(x_train, y_train) 
+        # Predicción de ocurrencua de una emoción dado un día x
+        return int(regresion.predict([[x_prediction]]))
         

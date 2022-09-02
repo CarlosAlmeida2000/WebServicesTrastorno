@@ -16,8 +16,8 @@ class ExpresionFacial:
         self.dataTrained = 'media\\Perfiles\\Trained'
         self.rutaModelos = 'Monitoreo\\trained_model\\'
         self.custodiadosReconocer = []
-        self.expresion_facial = ''
-        self.imagen_expresion = None
+        self.expresionFacial = ''
+        self.imagenExpresion = None
         self.custodiado = Custodiados()
         self.minutosDeteccion = 1
         self.byte = bytes()
@@ -58,9 +58,18 @@ class ExpresionFacial:
     def guardarHistorial(self):
         historial = Historial()
         historial.fecha_hora = datetime.now()
-        historial.expresion_facial = self.expresion_facial
+        ultimo_dia = 1
+        ultimo_historial = Historial.objects.filter(Q(custodiado_id = self.custodiado[0].id)).order_by('-fecha_hora')
+        if (len(ultimo_historial) > 0):
+            fecha_historial = datetime.strptime(ultimo_historial[0].fecha_hora.strftime('%Y-%m-%d'), '%Y-%m-%d')
+            ultimo_dia = ultimo_historial[0].dia
+            # verificar ESTOOOOOOOOOOOOOOOOO
+            if (datetime.strptime(datetime.now().strftime('%Y-%m-%d'), '%Y-%m-%d') > fecha_historial):
+                ultimo_dia += 1
+        historial.dia = ultimo_dia
+        historial.expresion_facial = self.expresionFacial
         historial.custodiado = self.custodiado[0]
-        frame_jpg = cv2.imencode('.png', cv2.resize(self.imagen_expresion,(450, 450),interpolation = cv2.INTER_CUBIC))
+        frame_jpg = cv2.imencode('.png', cv2.resize(self.imagenExpresion,(450, 450),interpolation = cv2.INTER_CUBIC))
         file = ContentFile(frame_jpg[1])
         historial.imagen_expresion.save('persona_id_' + str(self.custodiado[0].persona.id) + '_fecha_' + str(historial.fecha_hora) + '.png', file, save = True)
         historial.save()
@@ -89,7 +98,7 @@ class ExpresionFacial:
                         # recorriendo rostros 
                         for (x, y, w, h) in faces:
                             rostro = auxFrame[y:y + h, x:x + w]
-                            self.imagen_expresion = auxFrame_color[y:y + h, x:x + w]
+                            self.imagenExpresion = auxFrame_color[y:y + h, x:x + w]
                             # reconocimiento facial
                             rostro = cv2.resize(rostro, (150, 150), interpolation = cv2.INTER_CUBIC)
                             persona_identif = self.face_recognizer.predict(rostro)
@@ -105,11 +114,11 @@ class ExpresionFacial:
                                     cropped_img = np.expand_dims(np.expand_dims(cv2.resize(rostro, (48, 48)), -1), 0)
                                     prediction = self.model.predict(cropped_img)
                                     maxindex = int(np.argmax(prediction))
-                                    self.expresion_facial = self.emotion_dict[maxindex]
-                                    cv2.putText(video, self.expresion_facial, (x + 20, y-60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                                    self.expresionFacial = self.emotion_dict[maxindex]
+                                    cv2.putText(video, self.expresionFacial, (x + 20, y-60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                                     # se verifica si la última expresión facial registrada en el historial es igual a la expresión facial actual detectada, 
                                     # con el objetivo de no registrar un nuevo historial con esa misma fecha y hora
-                                    ultimo_historial = (Historial.objects.filter(Q(custodiado_id = self.custodiado[0].id) & Q(expresion_facial = self.expresion_facial)).order_by('-fecha_hora'))
+                                    ultimo_historial = (Historial.objects.filter(Q(custodiado_id = self.custodiado[0].id) & Q(expresion_facial = self.expresionFacial)).order_by('-fecha_hora'))
                                     if(len(ultimo_historial) > 0):
                                         fecha_historial = datetime.strptime(ultimo_historial[0].fecha_hora.strftime('%Y-%m-%d %H:%M:%S.%f') , '%Y-%m-%d %H:%M:%S.%f')
                                         minutos = (datetime.now() - fecha_historial).seconds * 0.0167
@@ -128,3 +137,4 @@ class ExpresionFacial:
             vigilancia = Vigilancia.objects.filter().first()
             vigilancia.estado = False
             vigilancia.save()
+            print(str(e))

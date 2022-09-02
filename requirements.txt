@@ -19,7 +19,7 @@ opencv-contrib-python
 Pillow==9.0.0
 platformdirs==2.4.1
 psycopg2==2.8.6
-psycopg2-binary==2.9.3
+psycopg2-binary==2.8.6
 pycparser==2.21
 python-dateutil==2.7.0
 python-decouple==3.4
@@ -31,3 +31,4 @@ tensorflow==2.8.0
 tzdata==2021.5
 urllib3==1.26.8
 whitenoise==6.0.0
+scikit-learn

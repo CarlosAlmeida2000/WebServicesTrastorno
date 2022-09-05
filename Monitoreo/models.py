@@ -36,6 +36,7 @@ class Historial(models.Model):
             historial = historial.values('id', 'fecha_hora', 'dia', 'expresion_facial', 'custodiado_id', 'custodiado__persona__nombres', 'custodiado__persona__apellidos', 'custodiado__persona__cedula', 'imagen_expresion')
             file = Image()
             for u in range(len(historial)):
+                historial[u]['fecha_hora'] = historial[u]['fecha_hora'].strftime('%Y-%m-%d %H:%M')
                 if(historial[u]['imagen_expresion'] != ''):
                     file.ruta = historial[u]['imagen_expresion']
                     historial[u]['imagen_expresion'] = file.get_base64()
@@ -64,7 +65,7 @@ class Historial(models.Model):
                     # Si existe una semana de registro del historial, se predice el trastorno
                     prediccion = 'Para la predicción del trastorno se debe tener 7 días de registros en el historial'
                     total_dias = historial.order_by('-dia')[0]['dia']
-                    if(total_dias > 1):
+                    if(total_dias > 7):
                         prediccion = Historial.prediccion_trastorno(total_dias, historial)
 
                     object_json =  { 
@@ -91,6 +92,7 @@ class Historial(models.Model):
 
     @staticmethod
     def prediccion_trastorno(total_dias, historial):
+        emotion_dict = {0: 'Enfadado', 1: 'Asqueado', 2: 'Temeroso', 3: 'Feliz', 4: 'Neutral', 5: 'Triste', 6: 'Sorprendido'}
         frecuencia_enfadado = list()
         frecuencia_asqueado = list()
         frecuencia_temeroso = list()
@@ -120,6 +122,7 @@ class Historial(models.Model):
         print('Neutral: ', frecuencia_neutral)
         print('Triste:', frecuencia_triste)
         print('Sorprendido: ', frecuencia_sorprendido)
+
         predicciones_emocion.append(Historial.regresion_logistica(dias_historial, frecuencia_enfadado, (total_dias + 1)))
         predicciones_emocion.append(Historial.regresion_logistica(dias_historial, frecuencia_asqueado, (total_dias + 1)))
         predicciones_emocion.append(Historial.regresion_logistica(dias_historial, frecuencia_temeroso, (total_dias + 1)))
@@ -128,12 +131,30 @@ class Historial(models.Model):
         predicciones_emocion.append(Historial.regresion_logistica(dias_historial, frecuencia_triste, (total_dias + 1)))
         predicciones_emocion.append(Historial.regresion_logistica(dias_historial, frecuencia_sorprendido, (total_dias + 1)))
 
-        print('prediciones de cada emoción: ', predicciones_emocion)
+        print('prediciones de cada emoción: ', predicciones_emocion, '\n') 
 
+        # import matplotlib.pyplot as plt 
+        # x_train = [(i + 1) for i in range(7)]
+        # plt.plot(x_train, predicciones_emocion)
+        # plt.yscale("log")
+        # plt.ylabel("Escala predicción ocurrencia a futuro")
+        # plt.xlabel("Escala Emociones")
+        # plt.show()
 
-
-
-        return ''
+        maxima_prediccion = max(predicciones_emocion)
+        emocion_predecida = emotion_dict[predicciones_emocion.index(maxima_prediccion)]
+        
+        print(emocion_predecida, maxima_prediccion)
+        if emocion_predecida == 'Enfadado':
+            return 'Trastorno explosivo intermitente con una predicción de ocurrencia a futuro de la emoción enfado de {0} veces'.format(maxima_prediccion)
+        elif emocion_predecida == 'Asqueado':
+            return 'Trastorno obsesivo compulsivo con una predicción de ocurrencia a futuro de la emoción asqueado de {0} veces'.format(maxima_prediccion)
+        elif emocion_predecida == 'Temeroso':
+            return 'Trastorno de personalidad con una predicción de ocurrencia a futuro de la emoción temeroso de {0} veces'.format(maxima_prediccion)
+        elif emocion_predecida == 'Triste':
+            return 'Trastorno depresivo con una predicción de ocurrencia a futuro de la emoción triste de {0} veces'.format(maxima_prediccion)
+        elif emocion_predecida == 'Feliz' or emocion_predecida == 'Neutral' or emocion_predecida == 'Sorprendido':
+            return 'Sin Trastorno'
 
     @staticmethod
     def regresion_logistica(x_train, y_train, x_prediction):
@@ -143,4 +164,3 @@ class Historial(models.Model):
         regresion.fit(x_train, y_train) 
         # Predicción de ocurrencua de una emoción dado un día x
         return int(regresion.predict([[x_prediction]]))
-        

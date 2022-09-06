@@ -63,24 +63,24 @@ class Historial(models.Model):
                     fecha_minima = (historial.order_by('fecha_hora'))[0]['fecha_hora']
                     fecha_maxima = (historial.order_by('-fecha_hora'))[0]['fecha_hora']
                     # Si existe una semana de registro del historial, se predice el trastorno
-                    prediccion = 'Para la predicción del trastorno se debe tener 7 días de registros en el historial'
+                    prediccion = 'For the prediction of the disorder, you must have 7 days of records in the history.'
                     total_dias = historial.order_by('-dia')[0]['dia']
                     if(total_dias > 7):
                         prediccion = Historial.prediccion_trastorno(total_dias, historial)
 
                     object_json =  { 
-                    'fecha_inicio_fin': 'Desde '+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + ' hasta ' + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
+                    'fecha_inicio_fin': 'From '+ str(fecha_minima.strftime('%Y-%m-%d %H:%M')) + ' to ' + str(fecha_maxima.strftime('%Y-%m-%d %H:%M')),
                     'custodiado__persona__nombres': cus.persona.nombres,
                     'custodiado__persona__apellidos': cus.persona.apellidos,
                     'custodiado__persona__cedula': cus.persona.cedula,
                     'dias_historial': total_dias,
-                    'enfadado': (historial.filter(expresion_facial = 'Enfadado').count()),
-                    'asqueado': (historial.filter(expresion_facial = 'Asqueado').count()),
-                    'temeroso': (historial.filter(expresion_facial = 'Temeroso').count()),
-                    'feliz': (historial.filter(expresion_facial = 'Feliz').count()),
+                    'enfadado': (historial.filter(expresion_facial = 'Angry').count()),
+                    'asqueado': (historial.filter(expresion_facial = 'Disgusted').count()),
+                    'temeroso': (historial.filter(expresion_facial = 'Afraid').count()),
+                    'feliz': (historial.filter(expresion_facial = 'Happy').count()),
                     'neutral': (historial.filter(expresion_facial = 'Neutral').count()),
-                    'triste': (historial.filter(expresion_facial = 'Triste').count()),
-                    'sorprendido': (historial.filter(expresion_facial = 'Sorprendido').count()),
+                    'triste': (historial.filter(expresion_facial = 'Sad').count()),
+                    'sorprendido': (historial.filter(expresion_facial = 'Surprised').count()),
                     'prediccion_trastorno': prediccion
                     }
                     historial_grafico.append(object_json)
@@ -92,7 +92,7 @@ class Historial(models.Model):
 
     @staticmethod
     def prediccion_trastorno(total_dias, historial):
-        emotion_dict = {0: 'Enfadado', 1: 'Asqueado', 2: 'Temeroso', 3: 'Feliz', 4: 'Neutral', 5: 'Triste', 6: 'Sorprendido'}
+        emotion_dict = {0: 'Angry', 1: 'Disgusted', 2: 'Afraid', 3: 'Happy', 4: 'Neutral', 5: 'Sad', 6: 'Surprised'}
         frecuencia_enfadado = list()
         frecuencia_asqueado = list()
         frecuencia_temeroso = list()
@@ -107,13 +107,13 @@ class Historial(models.Model):
         print(dias_historial)
 
         for d in dias_historial:
-            frecuencia_enfadado.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Enfadado')).count())
-            frecuencia_asqueado.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Asqueado')).count())
-            frecuencia_temeroso.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Temeroso')).count())
-            frecuencia_feliz.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Feliz')).count())
+            frecuencia_enfadado.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Angry')).count())
+            frecuencia_asqueado.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Disgusted')).count())
+            frecuencia_temeroso.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Afraid')).count())
+            frecuencia_feliz.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Happy')).count())
             frecuencia_neutral.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Neutral')).count())
-            frecuencia_triste.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Triste')).count())
-            frecuencia_sorprendido.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Sorprendido')).count())
+            frecuencia_triste.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Sad')).count())
+            frecuencia_sorprendido.append(historial.filter(Q(dia = d[0]) & Q(expresion_facial = 'Surprised')).count())
         
         print('Enfadado: ', frecuencia_enfadado)
         print('Asqueado: ', frecuencia_asqueado)
@@ -145,16 +145,16 @@ class Historial(models.Model):
         emocion_predecida = emotion_dict[predicciones_emocion.index(maxima_prediccion)]
         
         print(emocion_predecida, maxima_prediccion)
-        if emocion_predecida == 'Enfadado':
-            return 'Trastorno explosivo intermitente con una predicción de ocurrencia a futuro de la emoción enfado de {0} veces'.format(maxima_prediccion)
-        elif emocion_predecida == 'Asqueado':
-            return 'Trastorno obsesivo compulsivo con una predicción de ocurrencia a futuro de la emoción asqueado de {0} veces'.format(maxima_prediccion)
-        elif emocion_predecida == 'Temeroso':
-            return 'Trastorno de personalidad con una predicción de ocurrencia a futuro de la emoción temeroso de {0} veces'.format(maxima_prediccion)
-        elif emocion_predecida == 'Triste':
-            return 'Trastorno depresivo con una predicción de ocurrencia a futuro de la emoción triste de {0} veces'.format(maxima_prediccion)
-        elif emocion_predecida == 'Feliz' or emocion_predecida == 'Neutral' or emocion_predecida == 'Sorprendido':
-            return 'Sin Trastorno'
+        if emocion_predecida == 'Angry':
+            return 'Intermittent explosive disorder with a predicted future occurrence of the angry emotion of {0} times'.format(maxima_prediccion)
+        elif emocion_predecida == 'Disgusted':
+            return 'Obsessive-compulsive disorder with a prediction of future occurrence of the disgusted emotion of {0} times'.format(maxima_prediccion)
+        elif emocion_predecida == 'Afraid':
+            return 'Personality disorder with a prediction of future occurrence of the emotion fearful of {0} times'.format(maxima_prediccion)
+        elif emocion_predecida == 'Sad':
+            return 'Depressive disorder with a prediction of future occurrence of the sad emotion of {0} times'.format(maxima_prediccion)
+        elif emocion_predecida == 'Happy' or emocion_predecida == 'Neutral' or emocion_predecida == 'Surprised':
+            return 'No Disorder'
 
     @staticmethod
     def regresion_logistica(x_train, y_train, x_prediction):

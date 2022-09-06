@@ -43,7 +43,7 @@ class ExpresionFacial:
         # evita el uso de openCL y los mensajes de registro innecesarios
         cv2.ocl.setUseOpenCL(False)
         # diccionario que asigna a cada etiqueta una emoción (orden alfabético)
-        self.emotion_dict = {0: 'Enfadado', 1: 'Asqueado', 2: 'Temeroso', 3: 'Feliz', 4: 'Neutral', 5: 'Triste', 6: 'Sorprendido'}
+        self.emotion_dict = {0: 'Angry', 1: 'Disgusted', 2: 'Afraid', 3: 'Happy', 4: 'Neutral', 5: 'Sad', 6: 'Surprised'}
         # cargar el clasificador de detección de rostros pre entrenado de OpenCV
         self.faceClassif = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         # cargar el modelo entrenado para reconocer expresiones faciales
@@ -63,7 +63,7 @@ class ExpresionFacial:
         if (len(ultimo_historial) > 0):
             fecha_historial = datetime.strptime(ultimo_historial[0].fecha_hora.strftime('%Y-%m-%d'), '%Y-%m-%d')
             ultimo_dia = ultimo_historial[0].dia
-            # verificar ESTOOOOOOOOOOOOOOOOO
+            # Si la fecha actual es mayor al último historial, significa que el historial a registrar es de un nuevo día
             if (datetime.strptime(datetime.now().strftime('%Y-%m-%d'), '%Y-%m-%d') > fecha_historial):
                 ultimo_dia += 1
         historial.dia = ultimo_dia
@@ -137,4 +137,3 @@ class ExpresionFacial:
             vigilancia = Vigilancia.objects.filter().first()
             vigilancia.estado = False
             vigilancia.save()
-            print(str(e))

@@ -79,5 +79,5 @@ Visión general de los 5 pasos del ciclo de vida del modelo de red neuronal en K
 2. Compilar red.
 3. Ajustar red.
 4. Evaluar la red.
-5. Haga predicciones.
+5. Hacer las predicciones.
 """
